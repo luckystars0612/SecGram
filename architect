@@ -1,0 +1,65 @@
+project/
+├── bot/                    # Bot-specific modules
+│   ├── __init__.py
+│   ├── handlers.py         # Handle commands, messages, etc.
+│   ├── commands.py         # Command-specific functions
+│   └── main.py             # Entry point for bot (main loop)
+├── scraper/                # Scraper-specific modules
+│   ├── __init__.py
+│   ├── telegram_scraper.py # Scraping logic for channels, groups, etc.
+│   ├── utils.py            # Helper functions for scraping (e.g., rate-limiting)
+│   └── config.py           # Scraper configuration
+├── api/                    # API-related modules (ChatGPT interaction)
+│   ├── __init__.py
+│   ├── chatgpt_api.py      # Interactions with ChatGPT (translation/beautification)
+│   ├── config.py           # API configuration
+│   └── utils.py            # Helper functions for API calls
+├── config/                 # General configuration
+│   ├── __init__.py
+│   ├── settings.py         # Main settings (like Telegram API tokens, etc.)
+│   └── logger.py           # Logging configuration
+├── filehandler/            # New module for handling and extracting large ZIP files
+│   ├── __init__.py
+│   ├── zip_extractor.py    # Handle ZIP extraction (may be implemented in Rust or Golang)
+│   └── config.py           # File handler configuration (paths, extraction options)
+├── resources/              # telegram channel, group lists, other resources
+├── requirements.txt        # Project dependencies
+└── run.py                  # Main script to launch the services
+
+
+* Microservice Breakdown
+
+- Bot Service (bot/): Handles the Telegram bot setup, user commands, message handling, etc.
++ handlers.py: Contains different handlers (for messages, commands, etc.).
++ commands.py: Contains logic specific to bot commands (like /start, /help, etc.).
++ main.py: The entry point where you configure and start the bot. This is where the aiogram bot setup occurs, and where you start the event loop.
+
+- Scraper Service (scraper/): Scrapes information from Telegram channels or groups.
++ telegram_scraper.py: Contains the scraping logic, potentially using telethon or aiogram (if it’s bot-based).
++ utils.py: Helper functions like rate-limiting, retries, and error handling for scraping.
++ config.py: Contains settings like which channels to scrape, scraping intervals, or rate limits.
+
+- API Interaction Service (api/): Interacts with external APIs, like ChatGPT for translation or beautification.
++ chatgpt_api.py: Contains the logic to send data to the ChatGPT API and process the response.
++ config.py: API-related settings such as API keys, request timeouts, etc.
++ utils.py: Helper functions for interacting with APIs, like handling request errors or retries.
+
+- Configuration Service (config/): Centralizes all configurations.
++ settings.py: Contains all the main settings (API tokens, channel info, etc.). You could use a config file (like config.json) or a .env file for more flexibility.
++ logger.py: Centralized logging setup, so all modules log in the same format, making it easier to debug.
+
+- File handler Service (filehandler/): handle files from multiple channels
++ archive_extractor.py: Handle ZIP extraction (may be implemented in Rust or Golang)
++ config.py: config path, exception, flow for processing files
+
+- Resources: contains all resources needing for project
+
+- Main Service (run.py): This will be the main entry point for launching your bot and services.
++ It should initialize everything, such as the bot and scraper, and handle any setup before the system starts running.
++ This file will import the necessary modules from bot/, scraper/, and api/, and kick off the processes.
+
+* Technology
+- Telethon :main tech for handling tele info
+- Openai api: translation, verify, beautify information
+- Rust/Golang 
+- Python
