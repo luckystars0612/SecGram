@@ -1,3 +1,25 @@
+# Microservice Architecture
+Each major functionality is separated into its own service, allowing for independent development, deployment, and scaling
+- Bot Service: Manages Telegram bot interactions, such as responding to commands and posting updates to the channel.
+- Scraper Service: Scrapes data from sources like Telegram channels or dark web links.
+- API Service: Integrates with external APIs (e.g., ChatGPT) for advanced processing.
+- File Handler Service: Processes large files, such as extracting ZIP archives.
+- Database Service (Optional): Stores scraped data if enabled; otherwise, data bypasses storage and goes directly to the bot.
+- Search Service (Future-Ready): Handles automatic searching with support for both scheduled tasks and an AI bot.
+
+## Optional Database Integration
+- Database is optional, users can decide whether to save data (e.g., queries, scraped content) or skip storage and send it directly to the bot channel. This is achieved with:
+    + Configuration Flag: A setting like USE_DATABASE=True/False in a global configuration file. If True, data is stored in the database; if False, it’s processed and sent to the bot channel without persistence.
+    + Database Service: When enabled, this service receives data from the Scraper Service, stores it (e.g., in SQLite or PostgreSQL), and forwards it to the Bot Service for posting.
+    + Direct Flow: When disabled, the Scraper Service sends data straight to the Bot Service, bypassing storage.
+
+## Automatic Searching with AI Bot Space
+- For the automatic searching feature, Search Service that supports both scheduled searches and future AI bot integration:
+    + Scheduled Search: Initially, this service runs periodic searches (e.g., daily) based on predefined rules or keywords, updating the Scraper Service with new targets.
+    + AI Bot Space: The service uses an abstract interface for search logic, allowing you to plug in an AI bot later (e.g., using machine learning to discover sources intelligently). This ensures flexibility without disrupting the existing architecture.
+
+# Full architecture
+```bash
 project/
 ├── services/
 │   ├── bot_service/            # Handles Telegram bot interactions
@@ -32,8 +54,4 @@ project/
 │   └── darkweb_links.txt       # Initial dark web links
 ├── docker-compose.yml          # Containerizes services
 └── run.py                      # Orchestrates startup
-
-- Services: Each is a standalone module, deployable via Docker for consistency.
-- Message Broker: Ensures decoupled communication between services.
-- Configuration: Centralizes settings like USE_DATABASE for easy customization.
-- Resources: Stores initial data sources, editable or expandable via the Search Service.
+```
