@@ -1,0 +1,4 @@
+schedule==1.2.2  # For scheduled tasks
+pika==1.3.2  # For RabbitMQ communication
+python-dotenv==1.0.1
+# Add AI-related dependencies later (e.g., tensorflow, torch)

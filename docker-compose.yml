@@ -1,0 +1,134 @@
+version: '3.8'
+
+services:
+  # Message Broker (RabbitMQ)
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"  # AMQP port for service communication
+      - "15672:15672"  # Management UI (optional, for debugging)
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Bot Service
+  bot_service:
+    build:
+      context: ./services/bot_service
+      dockerfile: Dockerfile
+    container_name: bot_service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - USE_DATABASE=${USE_DATABASE:-false}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes:
+      - ./config:/app/config
+      - ./resources:/app/resources
+
+  # Scraper Service
+  scraper_service:
+    build:
+      context: ./services/scraper_service
+      dockerfile: Dockerfile
+    container_name: scraper_service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
+      - USE_DATABASE=${USE_DATABASE:-false}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes:
+      - ./config:/app/config
+      - ./resources:/app/resources
+
+  # API Service
+  api_service:
+    build:
+      context: ./services/api_service
+      dockerfile: Dockerfile
+    container_name: api_service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - CHATGPT_API_KEY=${CHATGPT_API_KEY}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes:
+      - ./config:/app/config
+
+  # File Handler Service
+  filehandler_service:
+    build:
+      context: ./services/filehandler_service
+      dockerfile: Dockerfile
+    container_name: filehandler_service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes:
+      - ./config:/app/config
+
+  # Database Service (Optional)
+  db_service:
+    build:
+      context: ./services/db_service
+      dockerfile: Dockerfile
+    container_name: db_service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - USE_DATABASE=${USE_DATABASE:-false}
+      - DATABASE_URL=sqlite:///data.db
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes:
+      - db_data:/app/data  # Persistent storage for SQLite
+      - ./config:/app/config
+
+  # Search Service
+  search_service:
+    build:
+      context: ./services/search_service
+      dockerfile: Dockerfile
+    container_name: search_service
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes:
+      - ./config:/app/config
+      - ./resources:/app/resources
+
+# Network Definition
+networks:
+  app-network:
+    driver: bridge
+
+# Volume Definition (for optional DB)
+volumes:
+  db_data:
