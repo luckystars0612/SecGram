@@ -28,6 +28,10 @@ project/
 │   ├── settings.py             # Configuration (e.g., USE_DATABASE)
 │   └── logger.py               # Logging setup
 ├── resources/                  # Static resources
+|   ├── sessions/
+│   |   ├── account1.session
+│   |   ├── account2.session
+│   |   └── account3.session
 │   ├── telegram_channels.txt   # Initial Telegram channels
 │   └── darkweb_links.txt       # Initial dark web links
 ├── docker-compose.yml          # Containerizes services

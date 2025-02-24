@@ -1,0 +1,5 @@
+high_priority_channel_1,10
+high_priority_channel_2,8
+high_priority_channel_3,6
+high_priority_channel_4,4
+high_priority_channel_5,2
