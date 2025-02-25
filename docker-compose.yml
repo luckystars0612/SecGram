@@ -86,7 +86,8 @@ services:
     networks:
       - app-network
     volumes:
-      - ./config:/app/config
+      - ./resources:/app/resources  # Input files from scraper_service
+      - ./extracted:/app/extracted  # Output directory
 
   # Database Service (Optional)
   db_service:
