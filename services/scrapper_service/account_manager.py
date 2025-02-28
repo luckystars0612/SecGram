@@ -111,9 +111,9 @@ class Account:
             if not missing_channels_db:
                 logger.debug(f"Database is up-to-date with required channels. Skipping Telegram fetch and joining.")
                 # Directly scrape 5 latest messages from each required channel
-                for channel in required_channels:
-                    messages = await self.scrape_messages(channel, limit=5)
-                    logger.debug(f"5 latest messages from {channel} for {self.name}: {messages}")
+                # for channel in required_channels:
+                #     messages = await self.scrape_messages(channel, limit=5)
+                #     logger.debug(f"5 latest messages from {channel} for {self.name}: {messages}")
             else:
                 logger.debug(f"Database lacks {len(missing_channels_db)} channels. Fetching from Telegram and verify missing channels.")
 
@@ -139,11 +139,14 @@ class Account:
                         joined_channels_db.add(channel)
 
                 # Scrape 5 latest messages from all required channels after updates
-                for channel in required_channels:
-                    messages = await self.scrape_messages(channel, limit=5)
-                    logger.debug(f"5 latest messages from {channel} for {self.name}: {messages}")
-        finally:
-            await self.disconnect()
+                # for channel in required_channels:
+                #     messages = await self.scrape_messages(channel, limit=5)
+                #     logger.debug(f"5 latest messages from {channel} for {self.name}: {messages}")
+        # finally:
+        #     await self.disconnect()
+        except Exception as e:
+            logger.error(f"Error processing channels for {self.name}: {e}")
+            raise
 
     async def join_channel(self, channel: str) -> None:
         """Join a Telegram channel and update the database using Telethon with date_joined."""
@@ -208,44 +211,46 @@ class Account:
 
 class AccountManager:
     """Manages multiple Telegram accounts with queue-based usage and real-time channel updates."""
-    def __init__(self, session_dir: str, accounts_file: str, db_path: str, proxy_pool: List[Dict] = None, email_config: Dict = None):
+    def __init__(self, resources_dir: str, db_path: str, proxy_pool: List[Dict] = None, email_config: Dict = None):
         """
         Initialize the AccountManager.
 
         :param session_dir: Directory for session files
         :param accounts_file: Path to accounts JSON file
+        :channel_path: Path to required channels
         :param db_path: Path to SQLite database
         :param proxy_pool: Optional list of proxies (e.g., [{'type': 'http', 'host': '10.65.47.23', 'port': 8080}])
         :param email_config: Optional email settings
         """
-        logger.debug(f"Initializing AccountManager with session_dir={session_dir}, db_path={db_path}, accounts_file={accounts_file}")
-        self.session_dir = session_dir
+        session_dir =  os.path.join(resources_dir,"sessions")
+        accounts_file_path = os.path.join(resources_dir,"accounts.json")
+        channel_file_path = os.path.join(resources_dir,"channels.json")
+        logger.debug(f"Initializing AccountManager with session_dir={session_dir}, db_path={db_path}, accounts_file={accounts_file_path}")
+
+        self.resources_dir = resources_dir
         self.db_path = db_path
         self.proxy_pool = proxy_pool or []
         self.email_config = email_config
         self.account_queue = asyncio.Queue()
-        
-        # Initialize a single SQLite connection via db_utils
-        self.db_conn = init_db(db_path, accounts_file)
-        self.accounts = self._load_accounts(accounts_file)
+        self.db_conn = init_db(db_path, accounts_file_path)
+        self.accounts = self._load_accounts(accounts_file_path)
+        self.required_channels = self._load_channels(channel_file_path)
+
         for account in self.accounts:
             self.account_queue.put_nowait(account)
         logger.debug(f"Loaded accounts: {[acc.name for acc in self.accounts]}")
-        self.required_channels = self._load_channels()
-        self._setup_channel_watcher()
+        
 
-    def _load_accounts(self, accounts_file: str) -> List[Account]:
+    def _load_accounts(self, accounts_file_path: str) -> List[Account]:
         """Load accounts from JSON file, optionally assigning proxies."""
-        logger.debug(f"Loading accounts from {accounts_file}")
+        logger.debug(f"Loading accounts from {accounts_file_path}")
         accounts = []
         try:
-            # Use absolute path to /home/kali/Desktop/SecGram/resources/accounts.json
-            accounts_path = '/home/kali/Desktop/SecGram/resources/accounts.json'
-            if not os.path.exists(accounts_path):
-                logger.error(f"Accounts file {accounts_path} does not exist")
+            if not os.path.exists(accounts_file_path):
+                logger.error(f"Accounts file {accounts_file_path} does not exist")
                 return accounts
 
-            with open(accounts_path, 'r') as f:
+            with open(accounts_file_path, 'r') as f:
                 data = json.load(f)
             for i, acc in enumerate(data['accounts']):
                 proxy = self.proxy_pool[i % len(self.proxy_pool)] if self.proxy_pool else None
@@ -267,17 +272,15 @@ class AccountManager:
             logger.error(f"Error loading accounts: {e}")
             return accounts
 
-    def _load_channels(self) -> List[str]:
+    def _load_channels(self, channels_file_path: str) -> List[str]:
         """Load required channels from /resources/channels.json."""
-        logger.debug("Loading channels from /resources/channels.json")
+        logger.debug(f"Loading channels from {channels_file_path}")
         try:
-            # Use absolute path to /home/kali/Desktop/SecGram/resources/channels.json
-            channels_path = '/home/kali/Desktop/SecGram/resources/channels.json'
-            if not os.path.exists(channels_path):
-                logger.error(f"Channels file {channels_path} does not exist")
+            if not os.path.exists(channels_file_path):
+                logger.error(f"Channels file {channels_file_path} does not exist")
                 return []
 
-            with open(channels_path, 'r') as f:
+            with open(channels_file_path, 'r') as f:
                 return json.load(f)
         except json.JSONDecodeError as e:
             logger.error(f"JSON error loading channels: {e}")
@@ -285,25 +288,6 @@ class AccountManager:
         except Exception as e:
             logger.error(f"Error loading channels: {e}")
             return []
-
-    def _setup_channel_watcher(self) -> None:
-        """Monitor /resources/channels.json for real-time updates."""
-        logger.debug("Setting up channel file watcher for /resources/channels.json")
-        class ChannelHandler(FileSystemEventHandler):
-            def __init__(self, manager):
-                self.manager = manager
-
-            def on_modified(self, event):
-                if event.src_path.endswith('/resources/channels.json'):
-                    logger.info("Channels file updated, reloading...")
-                    self.manager.required_channels = self.manager._load_channels()
-                    asyncio.run(self.manager._test_channels())
-
-        # Use absolute path to /home/kali/Desktop/SecGram/resources/
-        resources_path = '/home/kali/Desktop/SecGram/resources'
-        observer = Observer()
-        observer.schedule(ChannelHandler(self), path=resources_path, recursive=False)
-        observer.start()
 
     async def _test_channels(self) -> None:
         """Test connecting to the account, checking joined channels against DB, joining unjoined channels, and crawling 5 latest messages."""
