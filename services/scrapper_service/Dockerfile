@@ -1,18 +1,23 @@
-# services/scraper_service/Dockerfile
-FROM python:3.11-slim
+FROM python:3.9-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    gcc \
-    libffi-dev \
-    && rm -rf /var/lib/apt/lists/*
-
+# Copy requirements and install dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
-COPY . .
-COPY ../../config/ ./config/
-COPY ../../resources/ ./resources/
+# Copy source files and utilities
+COPY main.py .
+COPY account_manager.py .
+COPY utils/ utils/
 
-CMD ["python", "telegram_scraper.py"]
+# Create directories for sessions, resources, and database
+RUN mkdir -p /app/sessions /app/resources /app
+
+# Set up volume mounts for persistent data (mounted in docker-compose.yml)
+VOLUME /app/sessions
+VOLUME /app/resources
+VOLUME /app/telegram.db
+
+# Use host networking for direct access to host services
+CMD ["python", "main.py"]

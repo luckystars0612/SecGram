@@ -52,8 +52,9 @@ services:
     networks:
       - app-network
     volumes:
-      - ./config:/app/config
       - ./resources:/app/resources
+      - ./sessions:/app/sessions
+      - ./telegram.db:/app/telegram.db
 
   # API Service
   api_service:

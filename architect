@@ -4,11 +4,15 @@ project/
 │   │   ├── handlers.py         # Command and message handlers
 │   │   ├── commands.py         # Bot-specific commands
 │   │   └── main.py             # Bot entry point
-│   ├── scraper_service/        # Scrapes data from sources
-│   │   ├── base_scraper.py     # Abstract scraper class
-│   │   ├── telegram_scraper.py # Scrapes Telegram channels
-│   │   ├── darkweb_scraper.py  # Scrapes dark web links
-│   │   └── config.py           # Scraper settings
+│   ├── scraper_service/
+│   │   ├── main.py
+│   │   ├── account_manager.py
+│   │   ├── utils/
+│   │   │   ├── __init__.py
+│   │   │   ├── db_utils.py
+│   │   │   └── email_utils.py
+│   │   ├── requirements.txt
+│   │   └── Dockerfile        # Scraper settings
 │   ├── api_service/            # Manages external API calls
 │   │   ├── chatgpt_api.py      # ChatGPT integration
 │   │   └── config.py           # API credentials
@@ -32,7 +36,8 @@ project/
 │   |   ├── account1.session
 │   |   ├── account2.session
 │   |   └── account3.session
-│   ├── telegram_channels.txt   # Initial Telegram channels
+│   ├── accounts.json
+|   |── channels.json
 │   └── darkweb_links.txt       # Initial dark web links
 ├── docker-compose.yml          # Containerizes services
 └── run.py                      # Orchestrates startup

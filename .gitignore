@@ -1,0 +1,5 @@
+*.db
+__pycache__/
+*venv*/
+resources/accounts.json
+resources/sessions/*
