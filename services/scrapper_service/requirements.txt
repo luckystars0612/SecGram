@@ -1,2 +1,7 @@
-python-telegram
-watchdog
+pyaes==1.6.1
+pyasn1==0.6.1
+PySocks==1.7.1
+rsa==4.9
+telegram_text==0.2.0
+Telethon==1.39.0
+watchdog==6.0.0
